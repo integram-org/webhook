@@ -20,12 +20,6 @@
   revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
 
 [[projects]]
-  name = "github.com/gin-gonic/autotls"
-  packages = ["."]
-  revision = "5b3297bdcee778ff3bbdc99ab7c41e1c2677d22d"
-  version = "0.0.1"
-
-[[projects]]
   name = "github.com/gin-gonic/gin"
   packages = [".","binding","render"]
   revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
@@ -38,12 +32,6 @@
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
 
 [[projects]]
-  name = "github.com/k0kubun/pp"
-  packages = ["."]
-  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
-  version = "v2.3.0"
-
-[[projects]]
   name = "github.com/kelseyhightower/envconfig"
   packages = ["."]
   revision = "f611eb38b3875cc3bd991ca91c51d06446afa14c"
@@ -54,12 +42,6 @@
   packages = ["."]
   revision = "2e6820834a1f36c626bf19a253b7d3cc060e9b8b"
   version = "v1.2.3"
-
-[[projects]]
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
-  version = "v0.0.9"
 
 [[projects]]
   name = "github.com/mattn/go-isatty"
@@ -76,7 +58,7 @@
   branch = "master"
   name = "github.com/requilence/integram"
   packages = ["."]
-  revision = "56eda09aa5a3f57500e764738fd04eca7b9b04e9"
+  revision = "4d7cecb8c96e900011664a6c274aa89fe72bb4c0"
 
 [[projects]]
   branch = "master"
@@ -127,7 +109,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["acme","acme/autocert","ssh/terminal"]
+  packages = ["ssh/terminal"]
   revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
 
 [[projects]]
@@ -175,6 +157,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eb451f57cf9ed73892ae5120c6fc9679c059ea09c608f6ca4798f3158071db20"
+  inputs-digest = "d30dcccecc8893a1f5c156ddbf7174ce3b1bbbf70ab629f45182874bffd171b2"
   solver-name = "gps-cdcl"
   solver-version = 1
