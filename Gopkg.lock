@@ -58,7 +58,7 @@
   branch = "master"
   name = "github.com/requilence/integram"
   packages = ["."]
-  revision = "4d7cecb8c96e900011664a6c274aa89fe72bb4c0"
+  revision = "a610819bcd4714e7ed30826696fe6e4342b860a9"
 
 [[projects]]
   branch = "master"
@@ -157,6 +157,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d30dcccecc8893a1f5c156ddbf7174ce3b1bbbf70ab629f45182874bffd171b2"
+  inputs-digest = "aaa0a6d33e0f5b40917bd5a5e7d0b76bf383735ff5f29d5fdfef20ff1af40309"
   solver-name = "gps-cdcl"
   solver-version = 1
