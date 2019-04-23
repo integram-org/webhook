@@ -1,12 +1,15 @@
 package webhook
 
 import (
+	"bytes"
 	"errors"
+	"regexp"
 
 	"github.com/requilence/integram"
 )
 
 var m = integram.HTMLRichText{}
+var markdownRichText = integram.MarkdownRichText{}
 
 type Config struct{
 	integram.BotConfig
@@ -17,16 +20,17 @@ type webhook struct {
 	Mrkdwn      bool
 	Channel     string
 	Attachments []struct {
-		Pretext    string `json:"pretext"`
-		Fallback   string `json:"fallback"`
-		AuthorName string `json:"author_name"`
-		AuthorLink string `json:"author_link"`
-		Title      string `json:"title"`
-		TitleLink  string `json:"title_link"`
-		Text       string `json:"text"`
-		ImageURL   string `json:"image_url"`
-		ThumbURL   string `json:"thumb_url"`
-		Ts         int    `json:"ts"`
+		Pretext    string   `json:"pretext"`
+		Fallback   string   `json:"fallback"`
+		AuthorName string   `json:"author_name"`
+		AuthorLink string   `json:"author_link"`
+		Title      string   `json:"title"`
+		TitleLink  string   `json:"title_link"`
+		Text       string   `json:"text"`
+		MrkdwnIn   []string `json:"mrkdwn_in"`
+		ImageURL   string   `json:"image_url"`
+		ThumbURL   string   `json:"thumb_url"`
+		Ts         int      `json:"ts"`
 	} `json:"attachments"`
 }
 
@@ -60,6 +64,62 @@ func update(c *integram.Context) error {
 	return nil
 }
 
+func convertLinks(text string, regex *regexp.Regexp, encodeEntities func(string) string, linkFormat func(string, string) string) string {
+	if encodeEntities == nil {
+		encodeEntities = func(text string) string {
+			return text
+		}
+	}
+	submatches := regex.FindAllStringSubmatchIndex(text, -1)
+	if submatches == nil {
+		return encodeEntities(text)
+	}
+
+	convertedBuffer := new(bytes.Buffer)
+	convertedBuffer.Grow(len(text))
+	currentPosition := 0
+	for _, submatch := range submatches {
+		if submatch[0] > 0 {
+			convertedBuffer.WriteString(encodeEntities(text[currentPosition:submatch[0]]))
+		}
+		if submatch[2] < 0 {
+			// Code block, copy as-is
+			convertedBuffer.WriteString(encodeEntities(text[submatch[0]:submatch[1]]))
+		} else {
+			// URL link, convert
+			url := text[submatch[2]:submatch[3]]
+			displayText := url
+			if submatch[4] > 0 && submatch[4] != submatch[5] {
+				displayText = text[submatch[4] + 1:submatch[5]]
+			}
+			convertedBuffer.WriteString(linkFormat(displayText, url))
+		}
+		currentPosition = submatch[1]
+	}
+	if currentPosition < len(text) {
+		convertedBuffer.WriteString(encodeEntities(text[currentPosition:]))
+	}
+	return convertedBuffer.String()
+}
+
+func convertLinksToMarkdown(text string) string {
+	// Escape URL links if outside code blocks.
+	// Message format is documented at https://api.slack.com/docs/message-formatting)
+	// References to a Slack channel (@), user (#) or variable (!) are kept as-is
+	linkOrCodeBlockRegexp := regexp.MustCompile("```.+```|`[^`\n]+`|<([^@#! \n][^|> \n]*)(|[^>\n]+)?>")
+	return convertLinks(text, linkOrCodeBlockRegexp, nil, markdownRichText.URL);
+}
+
+func convertLinksToHtml(text string) string {
+	linkOrCodeBlockRegexp := regexp.MustCompile("<code>.*</code>|<pre>.*</pre>|<([^@#! \n][^|> \n]*)(|[^>\n]+)?>")
+	return convertLinks(text, linkOrCodeBlockRegexp, nil, m.URL);
+}
+
+func convertPlainWithLinksToHTML(text string) string {
+	linkRegexp := regexp.MustCompile("<([^@#! \n][^|> \n]*)(|[^>\n]+)?>")
+	return convertLinks(text, linkRegexp, m.EncodeEntities, m.URL);
+}
+
 func webhookHandler(c *integram.Context, wc *integram.WebhookContext) (err error) {
 
 	wh := webhook{Mrkdwn: true}
@@ -81,6 +141,7 @@ func webhookHandler(c *integram.Context, wc *integram.WebhookContext) (err error
 		}
 
 		haveAttachmentWithText:=false
+		haveMrkdwnAttachment:=false
 		for i, attachment := range wh.Attachments {
 			if i > 0 {
 				text += "\n"
@@ -99,19 +160,32 @@ func webhookHandler(c *integram.Context, wc *integram.WebhookContext) (err error
 			}
 
 			haveAttachmentWithText = true
+			for _, field := range attachment.MrkdwnIn {
+				if field == "pretext" {
+					haveMrkdwnAttachment = true
+				}
+			}
 
 			text += attachment.Pretext
 		}
 
 		if haveAttachmentWithText {
-			return c.NewMessage().SetText(text).EnableAntiFlood().EnableHTML().Send()
+			m := c.NewMessage().EnableAntiFlood()
+			if haveMrkdwnAttachment {
+				m.SetText(convertLinksToMarkdown(text)).EnableMarkdown()
+			} else {
+				m.SetText(convertLinksToHtml(text)).EnableHTML()
+			}
+			return m.Send()
 		}
 	}
 
 	if wh.Text != "" {
-		m := c.NewMessage().SetText(wh.Text + " " + wh.Channel).EnableAntiFlood()
+		m := c.NewMessage().EnableAntiFlood()
 		if wh.Mrkdwn {
-			m.EnableMarkdown()
+			m.SetText(convertLinksToMarkdown(wh.Text + " " + wh.Channel)).EnableMarkdown()
+		} else {
+			m.SetText(convertPlainWithLinksToHTML(wh.Text + " " + wh.Channel)).EnableHTML()
 		}
 		return m.Send()
 	}
